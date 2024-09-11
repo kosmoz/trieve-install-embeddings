@@ -14,6 +14,8 @@ is your account id.
 
 Get your account id with `aws sts get-caller-identity`
 
+https://github.com/devflowinc/install-embeddings/blob/d55047e2992a03ae0c98478a4a80d7dc8dcda6f7/create_cluster.sh#L7-L12
+
 ```sh
 account_id=555555555555
 region=us-east-2
