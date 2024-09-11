@@ -1,0 +1,8 @@
+accessKey: ""
+
+models:
+  jina-code:
+    replicas: 4
+    revision: main
+    modelName: jinaai/jina-embeddings-v2-base-code # The end of the URL https://huggingface.co/jinaai/jina-embeddings-v2-base-code
+    hfToken: "" # If you have a private hugging face repo

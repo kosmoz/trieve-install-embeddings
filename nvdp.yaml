@@ -1,0 +1,86 @@
+config:
+  name: ""
+  map: {}
+  default: ""
+  fallbackStrategies: ["named" , "single"]
+
+legacyDaemonsetAPI: null
+compatWithCPUManager: null
+migStrategy: null
+failOnInitError: null
+deviceListStrategy: null
+deviceIDStrategy: null
+nvidiaDriverRoot: null
+gdsEnabled: null
+mofedEnabled: null
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+selectorLabelsOverride: {}
+
+allowDefaultNamespace: false
+
+imagePullSecrets: []
+image:
+  repository: nvcr.io/nvidia/k8s-device-plugin
+  pullPolicy: IfNotPresent
+  tag: ""
+
+updateStrategy:
+  type: RollingUpdate
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+resources: {}
+nodeSelector:
+  eks-node: gpu
+affinity: {}
+tolerations:
+  - key: CriticalAddonsOnly
+    operator: Exists
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+priorityClassName: "system-node-critical"
+
+runtimeClassName: null
+
+nfd:
+  nameOverride: node-feature-discovery
+  enableNodeFeatureApi: false
+  master:
+    serviceAccount:
+      name: node-feature-discovery
+      create: true
+    config: 
+      extraLabelNs: ["nvidia.com"]
+
+  worker:
+    tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Equal"
+      value: ""
+      effect: "NoSchedule"
+    - key: "nvidia.com/gpu"
+      operator: "Equal"
+      value: "present"
+      effect: "NoSchedule"
+    config:
+      sources:
+        pci:
+          deviceClassWhitelist:
+          - "02"
+          - "0200"
+          - "0207"
+          - "0300"
+          - "0302"
+          deviceLabelFields:
+          - vendor
+gfd:
+  enabled: false
+  nameOverride: gpu-feature-discovery
+  namespaceOverride: ""
