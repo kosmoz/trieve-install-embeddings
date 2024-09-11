@@ -1,31 +1,27 @@
 # install-embeddings
 
 Need
-1) eksctl
-2) aws cli
-3) helm cli
-4) kubectl
+- (eksctl)[https://eksctl.io/installation/]
+- (aws cli)[https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html]
+- (helm cli)[https://helm.sh/docs/intro/install/#helm]
+- (kubectl)[https://kubernetes.io/docs/tasks/tools/#kubectl]
 
+### Check AWS quota
+Ensure you have quotas for
+- ${gpu_count}*4 for On-Demand G and VT instances in the region of choice
+- At least 1 load-balancer per each model you want. (Not per server running)
 
-1) Create eks cluster and install plugins
+### Create eks cluster and install needed plugins
 
-Modify create_cluster.sh, the main thing that is important to edit
-is your account id. 
+Modify the following lines in `create_cluster.sh`
 
-Get your account id with `aws sts get-caller-identity`
-
-https://github.com/devflowinc/install-embeddings/blob/d55047e2992a03ae0c98478a4a80d7dc8dcda6f7/create_cluster.sh#L7-L12
+To get your account id run 
 
 ```sh
-account_id=555555555555
-region=us-east-2
-cluster_name=trieve-gpu
-main_instance_type=t3.small
-gpu_instance_type=g4dn.xlarge
-gpu_count=1
+aws sts get-caller-identity
 ```
 
-Ensure you have quotas for ${gpu_count}*4 under On-Demand G and VT instances in your region of choice
+https://github.com/devflowinc/install-embeddings/blob/d55047e2992a03ae0c98478a4a80d7dc8dcda6f7/create_cluster.sh#L7-L12
 
 Run `./create_cluster.sh` to generate the cluster
 

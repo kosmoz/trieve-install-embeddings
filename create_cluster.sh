@@ -1,38 +1,63 @@
 #!/bin/bash
 
+usage() {
+  echo "
+
+usage: 
+
+export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query "Account" --output text)"
+export AWS_REGION=us-east-2
+export CLUSTER_NAME=trieve-gpu
+export CPU_INSTANCE_TYPE=t3.small
+export GPU_INSTANCE_TYPE=g4dn.xlarge
+export GPU_COUNT=1
+
+$0 
+  "
+}
+
 ############
 # Parameters
 export K8S_VERSION="1.30"
 
-account_id=555555555555
-region=us-east-2
-cluster_name=trieve-gpu
-main_instance_type=t3.small
-gpu_instance_type=g4dn.xlarge
-gpu_count=1
+[ -z $AWS_REGION ] && echo "error: AWS_REGION is not set" && usage && exit
+[ -z $CLUSTER_NAME ] && echo "CLUSTER_NAME is not set" && usage && exit
+[ -z $AWS_ACCOUNT_ID ] && echo "AWS_ACCOUNT_ID is not set" && usage && exit
+[ -z $GPU_COUNT ] && echo "GPU_COUNT is not set" && usage && exit
+[ -z $GPU_INSTANCE_TYPE ] && echo "GPU_INSTANCE_TYPE is not set" && usage && exit
+[ -z $CPU_INSTANCE_TYPE ] && echo "CPU_INSTANCE_TYPE is not set" && usage && exit
 
+echo "Provision a cluster in $(tput bold)${AWS_REGION}$(tput sgr0) named ${CLUSTER_NAME} for account ${AWS_ACCOUNT_ID}"
+echo "Cluster breakdown:"
+echo ""
+echo "+ ${GPU_COUNT} * $(tput bold)${GPU_INSTANCE_TYPE}$(tput sgr0)"
+echo "+ 1 * $(tput bold)${CPU_INSTANCE_TYPE}$(tput sgr0)"
+
+read -p "Confirm? [y/N]? " -r
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
 eksctl create cluster -f - << EOF
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: ${cluster_name}
-  region: ${region}
+  name: ${CLUSTER_NAME}
+  region: ${AWS_REGION}
 
 nodeGroups:
   - name: main-basic
-    instanceType: ${main_instance_type}
+    instanceType: ${CPU_INSTANCE_TYPE}
     desiredCapacity: 1
   - name: main-gpu
     labels: 
       eks-node: gpu
-    instanceType: ${gpu_instance_type}
-    desiredCapacity: ${gpu_count}
+    instanceType: ${GPU_INSTANCE_TYPE}
+    desiredCapacity: ${GPU_COUNT}
 EOF
 
 echo 'Deployment Done!'
 
-aws eks update-kubeconfig --region ${region} --name ${cluster_name}
+aws eks update-kubeconfig --region ${AWS_REGION} --name ${CLUSTER_NAME}
 
 echo 'creating config map'
 kubectl apply -f ./nvidia-device-plugin.yaml
@@ -49,17 +74,17 @@ curl \
   https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.7.1/docs/install/iam_policy.json
 
 aws iam create-policy \
-  --policy-name="${cluster_name}-load-balancer-controller-policy" \
+  --policy-name="${CLUSTER_NAME}-load-balancer-controller-policy" \
   --policy-document file://iam-policy.json
 
-eksctl utils associate-iam-oidc-provider --region=${region} --cluster=${cluster_name} --approve
+eksctl utils associate-iam-oidc-provider --region=${AWS_REGION} --cluster=${CLUSTER_NAME} --approve
 eksctl create iamserviceaccount \
-  --region="${region}" \
+  --region="${AWS_REGION}" \
   --name="aws-load-balancer-controller" \
   --namespace="kube-system" \
-  --cluster="${cluster_name}" \
-  --role-name="${cluster_name}-aws-load-balancer-controller-role" \
-  --attach-policy-arn="arn:aws:iam::${account_id}:policy/${cluster_name}-load-balancer-controller-policy" \
+  --cluster="${CLUSTER_NAME}" \
+  --role-name="${CLUSTER_NAME}-aws-load-balancer-controller-role" \
+  --attach-policy-arn="arn:aws:iam::${AWS_ACCOUNT_ID}:policy/${CLUSTER_NAME}-load-balancer-controller-policy" \
   --approve
 
 helm upgrade --install \
@@ -67,13 +92,17 @@ helm upgrade --install \
   eks/aws-load-balancer-controller \
   --version="1.7.1" \
   --namespace="kube-system" \
-  --set clusterName=${cluster_name} \
+  --set clusterName=${CLUSTER_NAME} \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
 helm upgrade -i nvdp nvdp/nvidia-device-plugin \
   --namespace kube-system \
-  -f ../k8s/base/nvdp.yaml \
+  -f nvdp.yaml \
   --version 0.14.0 \
   --set config.name=nvidia-device-plugin \
   --force
+else
+echo "Apply canceled"
+fi
+
