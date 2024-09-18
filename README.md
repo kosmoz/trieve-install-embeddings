@@ -1,13 +1,17 @@
 # install-embeddings
 
 Need
-- (eksctl)[https://eksctl.io/installation/]
-- (aws cli)[https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html]
-- (helm cli)[https://helm.sh/docs/intro/install/#helm]
-- (kubectl)[https://kubernetes.io/docs/tasks/tools/#kubectl]
+
+- [eksctl](https://eksctl.io/installation/) _(min. version 0.190.0)_
+- [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [helm cli](https://helm.sh/docs/intro/install/#helm)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+- [glasskube](https://glasskube.dev/docs/getting-started/install/)
 
 ### Check AWS quota
+
 Ensure you have quotas for
+
 - ${gpu_count}*4 for On-Demand G and VT instances in the region of choice
 - At least 1 load-balancer per each model you want. (Not per server running)
 
@@ -15,7 +19,7 @@ Ensure you have quotas for
 
 Modify the following lines in `create_cluster.sh`
 
-To get your account id run 
+To get your account id run
 
 ```sh
 aws sts get-caller-identity
@@ -42,7 +46,6 @@ kubectl get ing
 ```
 
 ![](./assets/ingress.png)
-
 
 ## Cleanup
 
