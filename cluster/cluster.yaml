@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./eksctl-schema.json
+
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: trieve
+  region: us-west-2
+  version: "1.30"
+
+iam:
+  withOIDC: true
+
+
+managedNodeGroups:
+  - name: main-large
+    instanceType: m7i-flex.large
+    desiredCapacity: 5
+    maxSize: 5
+    minSize: 2
+    volumeSize: 20
+    ssh:
+      allow: false
+    iam:
+      withAddonPolicies:
+        awsLoadBalancerController: true
+        ebs: true
+
+vpc:
+  cidr: 10.0.0.0/16
+
+addonsConfig:
+  autoApplyPodIdentityAssociations: true
+  disableDefaultAddons: false
+
+
+addons:
+  - name: eks-pod-identity-agent
+    version: latest
+  - name: vpc-cni
+    version: latest
+    useDefaultPodIdentityAssociations: true
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+    useDefaultPodIdentityAssociations: true

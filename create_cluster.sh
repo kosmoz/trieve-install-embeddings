@@ -11,6 +11,9 @@ export CLUSTER_NAME=trieve-gpu
 export CPU_INSTANCE_TYPE=t3.medium
 export GPU_INSTANCE_TYPE=g4dn.xlarge
 export GPU_COUNT=1
+export REPO_USERNAME=test
+export REPO_PASSWORD=test
+export DOMAIN=trieve.tld.com
 
 $0 
   "
@@ -27,6 +30,9 @@ export CPU_INSTANCE_COUNT=5
 [ -z $GPU_COUNT ] && echo "GPU_COUNT is not set" && usage && exit
 [ -z $GPU_INSTANCE_TYPE ] && echo "GPU_INSTANCE_TYPE is not set" && usage && exit
 [ -z $CPU_INSTANCE_TYPE ] && echo "CPU_INSTANCE_TYPE is not set" && usage && exit
+[ -z $REPO_USERNAME ] && echo "REPO_USERNAME is not set" && usage && exit
+[ -z $REPO_PASSWORD ] && echo "REPO_PASSWORD is not set" && usage && exit
+[ -z $DOMAIN ] && echo "DOMAIN is not set" && usage && exit
 
 echo "Provision a cluster in $(tput bold)$AWS_REGION$(tput sgr0) named $CLUSTER_NAME for account $AWS_ACCOUNT_ID"
 echo "Cluster breakdown:"
@@ -102,7 +108,8 @@ kubectl apply -f ./nvidia-device-plugin.yaml
 echo 'Deploying helm chart'
 
 helm repo add nvdp https://nvidia.github.io/k8s-device-plugin
-helm repo update nvdp
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update nvdp eks
 
 helm install --upgrade nvdp nvdp/nvidia-device-plugin \
   --namespace kube-system \
@@ -110,7 +117,22 @@ helm install --upgrade nvdp nvdp/nvidia-device-plugin \
   --version 0.14.0 \
   --set config.name=nvidia-device-plugin \
   --force
+
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=$CLUSTER_NAME \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set ingressClassConfig.default=true
+
+
+glasskube bootstrap
+glasskube repo add trieve https://trieve.private.dl.glasskube.dev/packages/ --username $REPO_USERNAME --password $REPO_PASSWORD
+glasskube install trieve-aws --use-default=all --value "domain=$DOMAIN" --yes
+
+
 else
 echo "Apply canceled"
 fi
+
 
