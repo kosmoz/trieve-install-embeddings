@@ -8,7 +8,12 @@ metadata:
   version: "1.30"
 
 iam:
-  withOIDC: true
+  podIdentityAssociations:
+    - namespace: kube-system
+      serviceAccountName: aws-load-balancer-controller
+      createServiceAccount: true
+      wellKnownPolicies:
+        awsLoadBalancerController: true
 
 
 managedNodeGroups:

@@ -52,7 +52,13 @@ metadata:
   version: "$K8S_VERSION"
 
 iam:
-  withOIDC: true
+  podIdentityAssociations:
+    - namespace: kube-system
+      serviceAccountName: aws-load-balancer-controller
+      createServiceAccount: true
+      wellKnownPolicies:
+        awsLoadBalancerController: true
+
 
 managedNodeGroups:
   - name: main
