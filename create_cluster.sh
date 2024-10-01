@@ -130,7 +130,7 @@ helm upgrade --install --repo https://aws.github.io/eks-charts aws-load-balancer
   --set ingressClassConfig.default=true
 
 
-glasskube bootstrap
+glasskube bootstrap --yes
 glasskube repo add trieve https://trieve.private.dl.glasskube.dev/packages/ --username $REPO_USERNAME --password $REPO_PASSWORD
 glasskube install trieve-aws --use-default=all --value "domain=$DOMAIN" --yes
 
